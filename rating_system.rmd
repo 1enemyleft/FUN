@@ -45,6 +45,9 @@ score <- apply(data_step2, 1, sum)
 data_step3 <- cbind(data, score)
 with(data_step3, data_step3[order(data_step3$score, decreasing = TRUE),])
 ```
+
+#### Result
+```{r}
   num_played_hours num_played_days totalPlayer thumbsup thumbsdown     score
 9             3986           16999        1251     1442         17  4.583151
 5             1172           78961         727      403         72  2.958618
@@ -55,5 +58,6 @@ with(data_step3, data_step3[order(data_step3$score, decreasing = TRUE),])
 8               13              37           5        3          2 -1.462883
 2               30            1200           2       33         12 -2.092863
 4               11             821          61       92         54 -2.615599
+```
 
 
