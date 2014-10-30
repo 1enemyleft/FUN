@@ -76,5 +76,5 @@ with(data_step3, data_step3[order(data_step3$score, decreasing = TRUE),])
 4               11             821          61       92         54 -2.615599
 ```
 
-#### From the result compare we can see the second method improved the ranking by incorprating more features, game number 8 was ranked top using first method but ranked at last 3 using second method. 
+##### From the result compare we can see the second method improved the ranking by incorprating more features, game number 8 was ranked top using first method but ranked at last 3 using second method. 
 
