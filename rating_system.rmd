@@ -1,4 +1,4 @@
-Roblox Popular Category Rating System
+Roblox Popular Category Rating Method Explore
 ========================================================
 
 ##### The idea is to take account of the information Roblox currently have online, number of played times, number of player online, thumbs up and thumbs down. And consider new games have few thumbsdown but may have more people played in the recent hours. The function will be look like: 
