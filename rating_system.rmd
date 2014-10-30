@@ -21,7 +21,23 @@ w = p + z * sqrt((1/n)*p*(1-p)) # wilson's score
 data_step1[,ncol(data_step1)+1] <- w # assign back to data 
 names(data_step1)[ncol(data_step1)] <- 'wilson_score'
 ```
+##### Only using wilson score for the rating to compare with the whole function system later
+```{r}
+with(data_step1, data_step1[order(data_step1$wilson_score, decreasing = TRUE),])
+```
 
+```{r}
+  num_played_hours num_played_days totalPlayer thumbsup thumbsdown wilson_score
+8               13              37           5        3          2    1.0294145
+1             2322            3123         981        5          0    1.0000000
+9             3986           16999        1251     1442         17    0.9938547
+3              138            4628         106       76         14    0.9193240
+5             1172           78961         727      403         72    0.8806714
+2               30            1200           2       33         12    0.8625400
+4               11             821          61       92         54    0.7084471
+7             1326            8118         613     7557       8476    0.4790672
+6              652           65254         261     2355       5076    0.3274945
+```
 
 ##### Step 2 Normalize each field so each feature is equal important for the rating 
 ```{r}
