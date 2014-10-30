@@ -1,0 +1,59 @@
+Roblox Popular Category Rating System
+========================================================
+
+##### The idea is to take account of the information Roblox currently have online, number of played times, number of player online, thumbs up and thumbs down. And consider new games have few thumbsdown but may have more people played in the recent hours. The function will be look like: 
+
+##### Score = (no. played times in few hours) + (no. played times in few days) + (no, of total players online) + (no. thumbs up / no. (thumbs up + thumbs down))
+
+##### Step1 create a new variable based on Wilson's binomial proportion confidence interval
+```{r}
+setwd("~/Dropbox/roblox")
+library(gdata)
+data <- read.xls('ratingdata.xlsx', header = TRUE)
+
+# suppose 95% confidence interval 
+# w = p + z * sqrt(1/n * p (1-p)) ; z = 1.96
+data_step1 <- data # store data in step1
+z = 1.96
+n = data_step1$thumbsup + data_step1$thumbsdown
+p = (data_step1$thumbsup)/n
+w = p + z * sqrt((1/n)*p*(1-p)) # wilson's score
+data_step1[,ncol(data_step1)+1] <- w # assign back to data 
+names(data_step1)[ncol(data_step1)] <- 'wilson_score'
+```
+
+
+##### Step 2 Normalize each field so each feature is equal important for the rating 
+```{r}
+data_step2 <- data_step1[,-c(4,5)]  # subset not contain thumbsup and thumbsdown
+
+# normalize using (x-mean)/standard deviation
+for (x in 1:ncol(data_step2)) {
+  colSdApply <- function(y) apply(X=y, MARGIN=2, FUN=sd)
+  col <- data_step2[,x]
+  col <- (col - mean(col))/sd(col)
+  data_step2[,x] <- col
+}
+```
+
+##### Step 3 Give score using the function defined before
+```{r}
+# socre = sum(row)
+score <- apply(data_step2, 1, sum)
+
+# join score back to original data
+data_step3 <- cbind(data, score)
+with(data_step3, data_step3[order(data_step3$score, decreasing = TRUE),])
+```
+  num_played_hours num_played_days totalPlayer thumbsup thumbsdown     score
+9             3986           16999        1251     1442         17  4.583151
+5             1172           78961         727      403         72  2.958618
+1             2322            3123         981        5          0  2.333082
+6              652           65254         261     2355       5076 -1.118942
+7             1326            8118         613     7557       8476 -1.138407
+3              138            4628         106       76         14 -1.446158
+8               13              37           5        3          2 -1.462883
+2               30            1200           2       33         12 -2.092863
+4               11             821          61       92         54 -2.615599
+
+
