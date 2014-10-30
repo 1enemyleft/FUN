@@ -45,7 +45,6 @@ data_step2 <- data_step1[,-c(4,5)]  # subset not contain thumbsup and thumbsdown
 
 # normalize using (x-mean)/standard deviation
 for (x in 1:ncol(data_step2)) {
-  colSdApply <- function(y) apply(X=y, MARGIN=2, FUN=sd)
   col <- data_step2[,x]
   col <- (col - mean(col))/sd(col)
   data_step2[,x] <- col
