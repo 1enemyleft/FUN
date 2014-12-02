@@ -7,7 +7,7 @@ Popular Category Rating Method Explore
 
 ##### Step1 create a new variable based on Wilson's binomial proportion confidence interval
 ```{r}
-setwd("~/Dropbox/roblox")
+setwd("~/Dropbox/***")
 library(gdata)
 data <- read.xls('ratingdata.xlsx', header = TRUE)
 
