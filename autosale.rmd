@@ -68,7 +68,7 @@ library(MASS)
 x17root <- as.numeric(AutoData[,17]^1/2)
 x17three <- as.numeric(AutoData[,17]^1/3)
 AutoData2 <- AutoData[,2:length(AutoData)]
-fit <- lm(TOTALSA~.+x17root+x17three, data=AlgData2)
+fit <- lm(TOTALSA~.+x17root+x17three, data=AutoData2)
 step <- stepAIC(fit, direction='both')
 #step$anova
 ```
@@ -78,15 +78,15 @@ formula = TOTALSA ~ RealGDP + UnRate + CPIU + UnleadedGas + SP500 + PAYEMS + EMR
 ###Modelling part
 ```{r}
 #simple mutlilinear model
-lm1 <- lm(TOTALSA~., data=AlgData2)
+lm1 <- lm(TOTALSA~., data=AutoData2)
 summary(lm1)
-lm2 <- lm(TOTALSA~ RealGDP + UnRate + CPIU + UnleadedGas + SP500 + PAYEMS + EMRATIO + DSPIC96 + CUSR0000SETA01 + CUSR0000SETA02 + CFMMIAUTO + DJIA, data=AlgData2)
+lm2 <- lm(TOTALSA~ RealGDP + UnRate + CPIU + UnleadedGas + SP500 + PAYEMS + EMRATIO + DSPIC96 + CUSR0000SETA01 + CUSR0000SETA02 + CFMMIAUTO + DJIA, data=AutoData2)
 summary(lm2)
 ```
 
 ```{r fig.width=6, fig.height=4}
 #pca model
-TOTALSA.prc <- prcomp(AlgData[,3:length(AlgData)], scores=TRUE)
+TOTALSA.prc <- prcomp(AutoData[,3:length(AutoData)], scores=TRUE)
 summary(TOTALSA.prc,loadings=TRUE, digits=2)
 plot(TOTALSA.prc)
 prc.sdev = TOTALSA.prc$sdev;
@@ -137,7 +137,7 @@ a3<-as.numeric(TOTALSA.prc$x[,3])
 a4<-as.numeric(TOTALSA.prc$x[,4])
 a5<-as.numeric(TOTALSA.prc$x[,5])
 AutoData3<-cbind(TOTALSA,a1,a2,a3,a4,a5)
-AutoData3<-as.data.frame(AlgData3)
+AutoData3<-as.data.frame(AutoData3)
 pclm <- lm(TOTALSA~a1+a2+a3+a4+a5, data=AutoData3)
 summary(pclm)
 ```
@@ -159,8 +159,8 @@ TOTALSA.2lag <- lag(TOTALSA,1)[2:t]
 set.seed(1243)
 ma1 <- rnorm(t-1)
 ma2 <- lag(ma1,1)
-AlgData.dfm <- AlgData2[2:t,]
-attach(AlgData.dfm)
+AutoData.dfm <- AutoData2[2:t,]
+attach(AutoData.dfm)
 a1<-a1[2:t]; a2<-a2[2:t]; a3<-a3[2:t]; a4<-a4[2:t] ;a5<-a5[2:t]
 fit <- lm(TOTALSA[2:t]~ a1 + a2 + a3 + a4 + a5 +ma1 )
 step <- stepAIC(fit, direction='both')
@@ -179,5 +179,5 @@ a5.fore <- forecast(auto.arima(a5))$mean[1:3]
 
 ```
 ```{r}
-detach(AlgData)
+detach(AutoData)
 ```
