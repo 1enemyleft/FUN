@@ -1,0 +1,183 @@
+This is for research on Auto Sale Forecasting
+========================================================
+
+Data cleaning up 
+```{r}
+rm(list=ls())
+setwd("C:/Users/jduan/Dropbox/Auto Sale")
+AutoData <- read.table('autodataset.txt', header=T)
+```
+
+Exploratory data analysis 
+```{r fig.width=8, fig.height=4}
+attach(AutoData)
+dim(AutoData)
+par(mfrow=c(1,2))
+acf(TOTALSA);pacf(TOTALSA)
+par(mfrow=c(1,1))
+```
+
+```{r fig.width=6, fig.height=4}
+#Plot of Total Auto Sales with Date as x-axis
+Date <- as.Date(Date, "%m/%d/%y")
+library(lattice)
+xyplot(TOTALSA~Date,type='l',col='blue',xlab='', ylab='Total Auto Sales')
+```
+
+Noticed there are three points that are suspicious outliers therefore we need to test whether they really are. To test it, I drew the residual of a linear model with several random variables to see if its that year's economy has boost. 
+```{r fig.width=6, fig.height=4}
+AutoData2 <- AutoData[,2:length(AutoData)]
+outlier.test.lm <- lm(TOTALSA~ RealGDP + UnRate + SP500 + AMBSL + PAYEMS + DSPIC96 + PI + DJIA, data=AutoData2)
+plot(outlier.test.lm$residuals, type='p',cex=.5, col='blue',ylab='residuals', main='Outlier test')
+```
+Here we can see it very clear that there are three dots that are obvious outliers, therefore delete these three outliers. 
+```{r fig.width=6, fig.height=4}
+which(outlier.test.lm$residuals>2.5)
+AutoData <- AutoData[-c(118,163,212),]
+attach(AutoData)
+xyplot(TOTALSA~(Date<-Date[-c(118,163,212)]),type='l',col='blue',xlab='', ylab='Total Auto Sales')
+```
+
+Exploratory analysis of the variables
+```{r fig.width=12, fig.height=28}
+par(mfrow=c(6,3))
+for (i in 3:length(AutoData))
+  {
+ plot(AutoData[,i]~Date,type='l',col=i,xlab='')
+}
+par(mfrow=c(1,1))
+```
+
+```{r fig.width=12, fig.height=28}
+#Scatter plot of Total Auto Sales with all the other 17 variables
+par(mfrow=c(6,3))
+for (i in 2:length(AutoData))
+  {
+  plot(TOTALSA~AutoData[,i],type='p',col=i)
+}
+par(mfrow=c(1,1))
+```
+
+From the 17 scatterplot I draw I find out the 4th and 17th Variable has quartic relation with TOTALSA, therefore in the linear regression model varaible selection part I included _x_17^(1/2) and x_4^(-1)_ then I use stepwise selection to choose variables. 
+
+Variable selection for linear regression model
+Selecting a subset of predictor variables from a larger set is a controversial topic, you can perform stepwise selection using stepAIC() function from the MASS package. stepAIC() performs stepwise model selection by exact AIC.
+```{r}
+#Stepwise Regression 
+library(MASS)
+x17root <- as.numeric(AutoData[,17]^1/2)
+x17three <- as.numeric(AutoData[,17]^1/3)
+AutoData2 <- AutoData[,2:length(AutoData)]
+fit <- lm(TOTALSA~.+x17root+x17three, data=AlgData2)
+step <- stepAIC(fit, direction='both')
+#step$anova
+```
+Final Model:
+formula = TOTALSA ~ RealGDP + UnRate + CPIU + UnleadedGas + SP500 + PAYEMS + EMRATIO + DSPIC96 + CUSR0000SETA01 + CUSR0000SETA02 + CFMMIAUTO + DJIA
+
+###Modelling part
+```{r}
+#simple mutlilinear model
+lm1 <- lm(TOTALSA~., data=AlgData2)
+summary(lm1)
+lm2 <- lm(TOTALSA~ RealGDP + UnRate + CPIU + UnleadedGas + SP500 + PAYEMS + EMRATIO + DSPIC96 + CUSR0000SETA01 + CUSR0000SETA02 + CFMMIAUTO + DJIA, data=AlgData2)
+summary(lm2)
+```
+
+```{r fig.width=6, fig.height=4}
+#pca model
+TOTALSA.prc <- prcomp(AlgData[,3:length(AlgData)], scores=TRUE)
+summary(TOTALSA.prc,loadings=TRUE, digits=2)
+plot(TOTALSA.prc)
+prc.sdev = TOTALSA.prc$sdev;
+plot(cumsum(prc.sdev/sum(prc.sdev)),type='l',xlab='Principal Components',ylab='Proportion of Variance')
+a1<-as.numeric(TOTALSA.prc$x[,1])
+a2<-as.numeric(TOTALSA.prc$x[,2])
+a3<-as.numeric(TOTALSA.prc$x[,3])
+a4<-as.numeric(TOTALSA.prc$x[,4])
+a5<-as.numeric(TOTALSA.prc$x[,5])
+AutoData3<-cbind(TOTALSA,a1,a2,a3,a4,a5)
+AutoData3<-as.data.frame(AutoData3)
+pclm <- lm(TOTALSA~a1+a2+a3+a4+a5, data=AutoData3)
+summary(pclm)
+```
+
+Model Selection 
+```{r}
+#Crossvalidation for forecasting precision 
+#For Linear models
+library(DAAG)
+lm1cv <- CVlm(df=Autodata2, m=5, form.lm=formula(TOTALSA~.), seed=1398, plotit=TRUE, printit=TRUE)
+summary(lm1cv)
+
+lm2cv <- CVlm(AutoData2, m=5, form.lm=formula(TOTALSA~ RealGDP + UnRate + CPIU + UnleadedGas + SP500 + PAYEMS + EMRATIO + DSPIC96 + CUSR0000SETA01 + CUSR0000SETA02 + CFMMIAUTO + DJIA), seed=1398, plotit=TRUE, printit=TRUE)
+summary(lm2cv)
+
+#For PCA model
+str(AutoData3)
+pcacv <- CVlm(df=AutoData3, m=5, form.lm=formula(TOTALSA~a1+a2+a3+a4+a5), seed=1398, plotit=TRUE, printit=TRUE)
+```
+
+###Forecasting
+This part I choose to forecast the variables first as timeseris data then I use the two models as selected then predict the auto sales in Janurary, Feburary and March. 
+```{r}
+#First fit timeseries models to variables
+```
+
+PCA Time Series 
+```{r}
+TOTALSA.prc <- prcomp(AutoData[,3:length(AutoData)], scores=TRUE)
+summary(TOTALSA.prc,loadings=TRUE, digits=2)
+plot(TOTALSA.prc)
+prc.sdev = TOTALSA.prc$sdev;
+plot(cumsum(prc.sdev/sum(prc.sdev)),type='l')
+a1<-as.numeric(TOTALSA.prc$x[,1])
+a2<-as.numeric(TOTALSA.prc$x[,2])
+a3<-as.numeric(TOTALSA.prc$x[,3])
+a4<-as.numeric(TOTALSA.prc$x[,4])
+a5<-as.numeric(TOTALSA.prc$x[,5])
+AutoData3<-cbind(TOTALSA,a1,a2,a3,a4,a5)
+AutoData3<-as.data.frame(AlgData3)
+pclm <- lm(TOTALSA~a1+a2+a3+a4+a5, data=AutoData3)
+summary(pclm)
+```
+
+p is the number of autoregressive terms,
+d is the number of nonseasonal differences, and
+q is the number of lagged forecast errors in the prediction equation.
+
+```{r}
+library(forecast) 
+auto.arima(TOTALSA)
+#First difference of TOTALSA
+t <- length(TOTALSA)
+#TOTALSA.diff <- TOTALSA[2:t]-TOTALSA[1:(t-1)]
+#Two lag of TOTALSA
+TOTALSA.1lag <- lag(TOTALSA,1)[2:t]
+TOTALSA.2lag <- lag(TOTALSA,1)[2:t]
+#Generate two moving average item 
+set.seed(1243)
+ma1 <- rnorm(t-1)
+ma2 <- lag(ma1,1)
+AlgData.dfm <- AlgData2[2:t,]
+attach(AlgData.dfm)
+a1<-a1[2:t]; a2<-a2[2:t]; a3<-a3[2:t]; a4<-a4[2:t] ;a5<-a5[2:t]
+fit <- lm(TOTALSA[2:t]~ a1 + a2 + a3 + a4 + a5 +ma1 )
+step <- stepAIC(fit, direction='both')
+fit2 <- lm(TOTALSA[2:t]~TOTALSA.1lag + a1 + a4)
+fit3 <- lm(TOTALSA[2:t]~TOTALSA.1lag +(-0.381)*TOTALSA.2lag  + (-1.488)*ma1 + (0.709)*ma2  )
+summary(fit)
+
+pcacv <- CVlm(df=AutoData.dfm, m=5, form.lm=formula(TOTALSA[2:t]~ a1 + a2 + a3 + a4 + a5 +ma1), seed=1398, plotit=TRUE, printit=TRUE)
+
+#Fitting ARIMA to principal components and 3 step Forecasting
+a1.fore <- forecast(auto.arima(a1))$mean[1:3]
+a2.fore <- forecast(auto.arima(a2))$mean[1:3]
+a3.fore <- forecast(auto.arima(a3))$mean[1:3]
+a4.fore <- forecast(auto.arima(a4))$mean[1:3]
+a5.fore <- forecast(auto.arima(a5))$mean[1:3]
+
+```
+```{r}
+detach(AlgData)
+```
