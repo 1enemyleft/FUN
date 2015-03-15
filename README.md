@@ -1,4 +1,4 @@
-fun_ad_hoc
+fun
 ==========
 
-This respository contains some fun discovery
+This respository contains some fun random discovery
