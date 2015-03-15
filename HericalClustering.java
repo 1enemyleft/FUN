@@ -1,6 +1,6 @@
 import java.util.*;
 
-public class HC {
+public class HericalClustering {
 	
 	public static void main(String[] args) {
 
